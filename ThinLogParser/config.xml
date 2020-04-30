@@ -1,0 +1,17 @@
+﻿<appdynamics-communication-info>
+  <!-- For on premise setup , please provide the port at the end of the URI -->
+  <event-service-endpoint></event-service-endpoint>
+  <!-- provided from the controller -->
+  <global-account></global-account>
+  <!-- api key has to be created in controller -->
+  <api-key></api-key>
+  <!--
+  multi entries such as Log1;Log2;, for specific source in event log use  logeventname->sourcename 
+  if specific log level is needed, the syntax is logeventname->sourcename->eventlevel
+  -->
+  <windows-events-names></windows-events-names>
+  <!-- Schema name to be created in AppDynamics Analytics Events Service, and used for posting data -->
+  <events-schema-name></events-schema-name>
+  <!-- only fill the host name if you want to override the hostname-->
+  <hostname></hostname>
+</appdynamics-communication-info>
