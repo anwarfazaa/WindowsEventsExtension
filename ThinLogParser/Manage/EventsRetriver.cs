@@ -42,7 +42,7 @@ namespace ThinLogParser.Manage
                     myLog = new EventLog(Event);
                     eventsSize = myLog.Entries.Count - 1;
 
-                    for (int i = eventsSize; i > 0; i--)
+                    for (int i = eventsSize; i >= 0; i--)
                     {
                         // comparing entry against time stamp
                         if (ManageOperations.LastRead >= myLog.Entries[i].TimeWritten)
@@ -64,7 +64,7 @@ namespace ThinLogParser.Manage
                     eventsSize = myLog.Entries.Count - 1;
                     if (splitContainer.Length == 2)
                     {
-                        for (int i = eventsSize; i > 0; i--)
+                        for (int i = eventsSize; i >= 0; i--)
                         {
                             if (ManageOperations.LastRead >= myLog.Entries[i].TimeWritten)
                             {
@@ -79,7 +79,7 @@ namespace ThinLogParser.Manage
                     else if (splitContainer.Length == 3)
                     {
                         EventLevel = splitContainer[2];
-                        for (int i = eventsSize; i > 0; i--)
+                        for (int i = eventsSize; i >= 0; i--)
                         {
                             if (ManageOperations.LastRead >= myLog.Entries[i].TimeWritten)
                             {
