@@ -11,7 +11,7 @@ namespace ThinLogParser.Manage
     class EventsRetriver
     {
         List<Event> eventContainer;
-        EventLog myLog;
+        EventLog eventLog;
 
         public EventsRetriver() {
 
@@ -39,19 +39,19 @@ namespace ThinLogParser.Manage
 
                 if (!Event.Contains("->"))
                 {
-                    myLog = new EventLog(Event);
-                    eventsSize = myLog.Entries.Count - 1;
+                    eventLog = new EventLog(Event);
+                    eventsSize = eventLog.Entries.Count - 1;
 
                     for (int i = eventsSize; i >= 0; i--)
                     {
                         // comparing entry against time stamp
-                        if (ManageOperations.LastRead >= myLog.Entries[i].TimeWritten)
+                        if (ManageOperations.LastRead <= eventLog.Entries[i].TimeWritten)
                         {
                             break;
                         }
-                        eventContainer.Add(new Event(Event, myLog.Entries[i].EntryType.ToString(), myLog.Entries[i].TimeWritten, ConfigurationReader.ConfigurationSet["hostname"], myLog.Entries[i].Source, myLog.Entries[i].Message, myLog.Entries[i].InstanceId));
+                        eventContainer.Add(new Event(Event, eventLog.Entries[i].EntryType.ToString(), eventLog.Entries[i].TimeWritten, ConfigurationReader.ConfigurationSet["hostname"], eventLog.Entries[i].Source, eventLog.Entries[i].Message, eventLog.Entries[i].InstanceId));
                     }
-                    myLog.Close();
+                    eventLog.Close();
 
                 }
                 else
@@ -60,19 +60,19 @@ namespace ThinLogParser.Manage
                     splitContainer = Event.Split(seprator, StringSplitOptions.RemoveEmptyEntries);
                     SingleEventEntry = splitContainer[0];
                     EventSource = splitContainer[1];
-                    myLog = new EventLog(SingleEventEntry);
-                    eventsSize = myLog.Entries.Count - 1;
+                    eventLog = new EventLog(SingleEventEntry);
+                    eventsSize = eventLog.Entries.Count - 1;
                     if (splitContainer.Length == 2)
                     {
                         for (int i = eventsSize; i >= 0; i--)
                         {
-                            if (ManageOperations.LastRead >= myLog.Entries[i].TimeWritten)
+                            if (ManageOperations.LastRead <= eventLog.Entries[i].TimeWritten)
                             {
                                 break;
                             }
-                            if (myLog.Entries[i].Source.ToString() == EventSource)
+                            if (eventLog.Entries[i].Source.ToString() == EventSource)
                             {
-                                eventContainer.Add(new Event(SingleEventEntry, myLog.Entries[i].EntryType.ToString(), myLog.Entries[i].TimeWritten, ConfigurationReader.ConfigurationSet["hostname"], myLog.Entries[i].Source, myLog.Entries[i].Message, myLog.Entries[i].InstanceId));
+                                eventContainer.Add(new Event(SingleEventEntry, eventLog.Entries[i].EntryType.ToString(), eventLog.Entries[i].TimeWritten, ConfigurationReader.ConfigurationSet["hostname"], eventLog.Entries[i].Source, eventLog.Entries[i].Message, eventLog.Entries[i].InstanceId));
                             }
                         }
                     }
@@ -81,13 +81,13 @@ namespace ThinLogParser.Manage
                         EventLevel = splitContainer[2];
                         for (int i = eventsSize; i >= 0; i--)
                         {
-                            if (ManageOperations.LastRead >= myLog.Entries[i].TimeWritten)
+                            if (ManageOperations.LastRead <= eventLog.Entries[i].TimeWritten)
                             {
                                 break;
                             }
-                            if (myLog.Entries[i].Source.ToString() == EventSource && myLog.Entries[i].EntryType.ToString() == EventLevel)
+                            if (eventLog.Entries[i].Source.ToString() == EventSource && eventLog.Entries[i].EntryType.ToString() == EventLevel)
                             {
-                                eventContainer.Add(new Event(SingleEventEntry, myLog.Entries[i].EntryType.ToString(), myLog.Entries[i].TimeWritten, ConfigurationReader.ConfigurationSet["hostname"], myLog.Entries[i].Source, myLog.Entries[i].Message, myLog.Entries[i].InstanceId));
+                                eventContainer.Add(new Event(SingleEventEntry, eventLog.Entries[i].EntryType.ToString(), eventLog.Entries[i].TimeWritten, ConfigurationReader.ConfigurationSet["hostname"], eventLog.Entries[i].Source, eventLog.Entries[i].Message, eventLog.Entries[i].InstanceId));
                             }
                         }
                     }
