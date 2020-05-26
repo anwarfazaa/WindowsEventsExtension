@@ -74,20 +74,31 @@ namespace ThinLogParser
         /// <param name="events">The events list provided in the configuration</param>
         public void publishEvent(List<Event> events)
         {
-            client = new RestClient(ConfigurationSet["event-service-endpoint"] + "/events/publish/" + ConfigurationSet["events-schema-name"]);
             
+            //prepare batch before sending (5 entries)
             for (int i=0; i < events.Count; i++) { 
-                RestRequestBody = new RestRequest(Method.POST);
+                
                 jsonRequest = new JObject(new JProperty("LoggedTime", events[i].LoggedTime), new JProperty("LogName", events[i].LogName), new JProperty("EventLevel", events[i].EventLevel), new JProperty("Hostname", events[i].HostName), new JProperty("Source", events[i].Source), new JProperty("Message", events[i].Message), new JProperty("EventID", events[i].EventID));
-                //Preparing headers
-                RestRequestBody.AddHeader("X-Events-API-AccountName", ConfigurationSet["global-account"]);
-                RestRequestBody.AddHeader("X-Events-API-Key", ConfigurationSet["api-key"]);
-                RestRequestBody.AddHeader("Content-type", "application/vnd.appd.events+json;v=2");
-                RestRequestBody.AddHeader("Accept", "application/vnd.appd.events+json;v=2");
-                RestRequestBody.AddParameter("application/vnd.appd.events+json;v=2", "[" + jsonRequest.ToString().Replace("/r/n","") + "]", ParameterType.RequestBody);
-                var action = client.Execute(RestRequestBody);
-                System.Threading.Thread.Sleep(10);
+                pushBatch(jsonRequest);
+
+
+
             }
+        }
+
+        public void pushBatch(JObject jsonRequest)
+        {
+            RestRequestBody = new RestRequest(Method.POST);
+            client = new RestClient(ConfigurationSet["event-service-endpoint"] + "/events/publish/" + ConfigurationSet["events-schema-name"]);
+            //Preparing headers
+            RestRequestBody.AddHeader("X-Events-API-AccountName", ConfigurationSet["global-account"]);
+            RestRequestBody.AddHeader("X-Events-API-Key", ConfigurationSet["api-key"]);
+            RestRequestBody.AddHeader("Content-type", "application/vnd.appd.events+json;v=2");
+            RestRequestBody.AddHeader("Accept", "application/vnd.appd.events+json;v=2");
+            RestRequestBody.AddParameter("application/vnd.appd.events+json;v=2", "[" + jsonRequest.ToString().Replace("/r/n", "") + "]", ParameterType.RequestBody);
+            var action = client.Execute(RestRequestBody);
+            System.Threading.Thread.Sleep(10);
+
         }
 
     }
