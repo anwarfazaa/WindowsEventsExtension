@@ -13,12 +13,9 @@ namespace ThinLogParser
 
         static void Main(string[] args)
         {
+
             ConfigurationReader.LoadXmlConfiguration();
             ControllerCommunication controllerCommunication = new ControllerCommunication();
-            ManageOperations.LastReadInit();
-            EventsRetriver eventsRetriver = new EventsRetriver();
-
-
 
 
             if (args.Length > 0)
@@ -41,6 +38,9 @@ namespace ThinLogParser
                     Console.ReadLine();
                 }
             } else {
+
+                ManageOperations.LastReadInit();
+                EventsRetriver eventsRetriver = new EventsRetriver();
 
                 // populate a list of events to push to AppDynamics events service
                 eventsRetriver.populate();
