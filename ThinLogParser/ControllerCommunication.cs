@@ -69,21 +69,32 @@ namespace ThinLogParser
         }
 
         /// <summary>
-        /// To do , create batches of request (each request to contain 20~ entries, also check if size is less or equal to 20 kb as per documentation)
+        /// To do , create batches of request (each request to contain 5~ entries, also check if size is less or equal to 20 kb as per documentation)
         /// </summary>
         /// <param name="events">The events list provided in the configuration</param>
         public void publishEvent(List<Event> events)
         {
-            
+            int objectSize = 0;
             //prepare batch before sending (5 entries)
-            for (int i=0; i < events.Count; i++) { 
+            for (int i=0; i < events.Count; i++) {
+
+                jsonRequest.Add(new JObject(new JProperty("LoggedTime", events[i].LoggedTime), new JProperty("LogName", events[i].LogName), new JProperty("EventLevel", events[i].EventLevel), new JProperty("Hostname", events[i].HostName), new JProperty("Source", events[i].Source), new JProperty("Message", events[i].Message), new JProperty("EventID", events[i].EventID)));
+                objectSize++;
                 
-                jsonRequest = new JObject(new JProperty("LoggedTime", events[i].LoggedTime), new JProperty("LogName", events[i].LogName), new JProperty("EventLevel", events[i].EventLevel), new JProperty("Hostname", events[i].HostName), new JProperty("Source", events[i].Source), new JProperty("Message", events[i].Message), new JProperty("EventID", events[i].EventID));
-                pushBatch(jsonRequest);
+                
+                // checking if batch size is fullfiled , also send remaining entries if objectSize cannot be matched.
+                // still needs testing
+                if (objectSize == 4 || (events.Count - i < 4)) {
+                    pushBatch(jsonRequest);
+                    jsonRequest.RemoveAll();
+                    objectSize = 0;
+                }
+                
 
 
 
             }
+            
         }
 
         public void pushBatch(JObject jsonRequest)

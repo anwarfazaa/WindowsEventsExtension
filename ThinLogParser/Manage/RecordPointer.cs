@@ -23,7 +23,7 @@ namespace ThinLogParser.Manage
 
         public static void Initalize()
         {
-            String x = "^FIXT.\\d.\\d-TULLETT-((?!(ZTEST|SIMP)))(.*)";
+            
 
         }
 
