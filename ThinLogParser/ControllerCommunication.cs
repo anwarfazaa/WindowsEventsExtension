@@ -1,116 +1,110 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using RestSharp;
-using RestSharp.Serializers;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using RestSharp;
 using ThinLogParser.Objects;
 
 namespace ThinLogParser
 {
-    /// <summary>
-    /// Maybe convert it into static class
-    /// </summary>
-    class ControllerCommunication
+    public static class ControllerCommunication
     {
-        public RestClient client;
-        public Dictionary<string, string> ConfigurationSet;
-        public RestRequest RestRequestBody;
-        private JObject jsonRequest;
+        private static readonly Dictionary<string, string> Config = ConfigurationReader.LoadXmlConfiguration();
 
-        public ControllerCommunication()
+        private static RestClient CreateClient(string endpointSuffix)
         {
-            ConfigurationReader.LoadXmlConfiguration();
-            ConfigurationSet = ConfigurationReader.ConfigurationSet;
+            return new RestClient($"{Config["event-service-endpoint"]}{endpointSuffix}");
         }
 
-        public string createSchema()
+        private static RestRequest CreateRequest(Method method)
         {
-            client = new RestClient(ConfigurationSet["event-service-endpoint"] + "/events/schema/" + ConfigurationSet["events-schema-name"]);
-            JObject jsonRequest = new JObject(
-            new JProperty("schema",
-                new JObject(
-                    new JProperty("LoggedTime", "date"),
-                    new JProperty("LogName", "string"),
-                    new JProperty("EventLevel", "string"),
-                    new JProperty("Hostname", "string"),
-                    new JProperty("Source" , "string"),
-                    new JProperty("Message", "string"),
-                    new JProperty("EventID", "float"))));
-            RestRequestBody = new RestRequest(Method.POST);
-            //Preparing headers
-            RestRequestBody.AddHeader("X-Events-API-AccountName", ConfigurationSet["global-account"]);
-            RestRequestBody.AddHeader("X-Events-API-Key", ConfigurationSet["api-key"]);
-            RestRequestBody.AddHeader("Content-type", "application/vnd.appd.events+json;v=2");
-            RestRequestBody.AddHeader("Accept", "application/vnd.appd.events+json;v=2");
-            //Preparing content
-            RestRequestBody.AddParameter("application/vnd.appd.events+json;v=2", jsonRequest.ToString(), ParameterType.RequestBody);
-            var action = client.Execute(RestRequestBody);
-            return action.StatusDescription;
+            var request = new RestRequest(method);
+            request.AddHeader("X-Events-API-AccountName", Config["global-account"]);
+            request.AddHeader("X-Events-API-Key", Config["api-key"]);
+            request.AddHeader("Content-type", "application/vnd.appd.events+json;v=2");
+            request.AddHeader("Accept", "application/vnd.appd.events+json;v=2");
+            return request;
         }
 
-        /// <summary>
-        /// Deleting Schema , please be cautios when using this feature, its purpose is for schemas creation rollback.
-        /// Providing wrong Schema may cause loss of data and corrurping analytics service
-        /// </summary>
-        /// <returns>Events service response</returns>
-        public string deleteSchema()
+        public static string CreateSchema()
         {
-            client = new RestClient(ConfigurationSet["event-service-endpoint"] + "/events/schema/" + ConfigurationSet["events-schema-name"]);
-            RestRequestBody = new RestRequest(Method.DELETE);
-            RestRequestBody.AddHeader("X-Events-API-AccountName", ConfigurationSet["global-account"]);
-            RestRequestBody.AddHeader("X-Events-API-Key", ConfigurationSet["api-key"]);
-            RestRequestBody.AddHeader("Accept", "application/vnd.appd.events+json;v=2");
-            var action = client.Execute(RestRequestBody);
-            return action.StatusDescription;
-        }
+            var client = CreateClient($"/events/schema/{Config["events-schema-name"]}");
+            var request = CreateRequest(Method.POST);
 
-        /// <summary>
-        /// To do , create batches of request (each request to contain 5~ entries, also check if size is less or equal to 20 kb as per documentation)
-        /// </summary>
-        /// <param name="events">The events list provided in the configuration</param>
-        public void publishEvent(List<Event> events)
-        {
-            int objectSize = 0;
-            //prepare batch before sending (5 entries)
-            for (int i=0; i < events.Count; i++) {
-
-                jsonRequest.Add(new JObject(new JProperty("LoggedTime", events[i].LoggedTime), new JProperty("LogName", events[i].LogName), new JProperty("EventLevel", events[i].EventLevel), new JProperty("Hostname", events[i].HostName), new JProperty("Source", events[i].Source), new JProperty("Message", events[i].Message), new JProperty("EventID", events[i].EventID)));
-                objectSize++;
-                
-                
-                // checking if batch size is fullfiled , also send remaining entries if objectSize cannot be matched.
-                // still needs testing
-                if (objectSize == 4 || (events.Count - i < 4)) {
-                    pushBatch(jsonRequest);
-                    jsonRequest.RemoveAll();
-                    objectSize = 0;
+            var schema = new JObject
+            {
+                ["schema"] = new JObject
+                {
+                    ["LoggedTime"] = "date",
+                    ["LogName"] = "string",
+                    ["EventLevel"] = "string",
+                    ["Hostname"] = "string",
+                    ["Source"] = "string",
+                    ["Message"] = "string",
+                    ["EventID"] = "float"
                 }
-                
+            };
 
-
-
-            }
-            
+            request.AddParameter("application/vnd.appd.events+json;v=2", schema.ToString(), ParameterType.RequestBody);
+            var response = client.Execute(request);
+            return response.StatusDescription;
         }
 
-        public void pushBatch(JObject jsonRequest)
+        public static string DeleteSchema()
         {
-            RestRequestBody = new RestRequest(Method.POST);
-            client = new RestClient(ConfigurationSet["event-service-endpoint"] + "/events/publish/" + ConfigurationSet["events-schema-name"]);
-            //Preparing headers
-            RestRequestBody.AddHeader("X-Events-API-AccountName", ConfigurationSet["global-account"]);
-            RestRequestBody.AddHeader("X-Events-API-Key", ConfigurationSet["api-key"]);
-            RestRequestBody.AddHeader("Content-type", "application/vnd.appd.events+json;v=2");
-            RestRequestBody.AddHeader("Accept", "application/vnd.appd.events+json;v=2");
-            RestRequestBody.AddParameter("application/vnd.appd.events+json;v=2", "[" + jsonRequest.ToString().Replace("/r/n", "") + "]", ParameterType.RequestBody);
-            var action = client.Execute(RestRequestBody);
-            System.Threading.Thread.Sleep(10);
-
+            var client = CreateClient($"/events/schema/{Config["events-schema-name"]}");
+            var request = CreateRequest(Method.DELETE);
+            var response = client.Execute(request);
+            return response.StatusDescription;
         }
 
+        public static async Task PublishEventsAsync(List<Event> events)
+        {
+            const int maxBatchSize = 5;
+            const int maxSizeBytes = 20 * 1024;
+
+            var batch = new JArray();
+            int currentSize = 0;
+
+            foreach (var evt in events)
+            {
+                var eventObj = new JObject
+                {
+                    ["LoggedTime"] = evt.LoggedTime,
+                    ["LogName"] = evt.LogName,
+                    ["EventLevel"] = evt.EventLevel,
+                    ["Hostname"] = evt.HostName,
+                    ["Source"] = evt.Source,
+                    ["Message"] = evt.Message,
+                    ["EventID"] = evt.EventID
+                };
+
+                batch.Add(eventObj);
+                currentSize += Encoding.UTF8.GetByteCount(eventObj.ToString());
+
+                if (batch.Count >= maxBatchSize || currentSize >= maxSizeBytes)
+                {
+                    await PushBatchAsync(batch);
+                    batch.Clear();
+                    currentSize = 0;
+                }
+            }
+
+            if (batch.Count > 0)
+            {
+                await PushBatchAsync(batch);
+            }
+        }
+
+        private static async Task PushBatchAsync(JArray batch)
+        {
+            var client = CreateClient($"/events/publish/{Config["events-schema-name"]}");
+            var request = CreateRequest(Method.POST);
+
+            request.AddParameter("application/vnd.appd.events+json;v=2", batch.ToString(), ParameterType.RequestBody);
+            await client.ExecuteAsync(request);
+            await Task.Delay(10); // non-blocking equivalent to Thread.Sleep(10)
+        }
     }
 }
